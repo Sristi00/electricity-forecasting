@@ -1,0 +1,179 @@
+{
+  "feature_importance": [
+    {
+      "feature": "gas_dkk",
+      "importance": 9.44738530961331e-06
+    },
+    {
+      "feature": "price_lag_24h",
+      "importance": 7.75262014940381e-06
+    },
+    {
+      "feature": "renewable_mwh",
+      "importance": 7.328843366849469e-06
+    },
+    {
+      "feature": "price_lag_48h",
+      "importance": 4.727405666926643e-06
+    },
+    {
+      "feature": "dow_sin",
+      "importance": 4.455188445717795e-06
+    },
+    {
+      "feature": "hour_sin",
+      "importance": 4.455032467376441e-06
+    },
+    {
+      "feature": "load_mwh",
+      "importance": 4.321598680689931e-06
+    },
+    {
+      "feature": "price_lag_168h",
+      "importance": 4.097038981853984e-06
+    },
+    {
+      "feature": "wind_speed_ms",
+      "importance": 3.830852165265242e-06
+    },
+    {
+      "feature": "hour_cos",
+      "importance": 3.747433993339655e-06
+    },
+    {
+      "feature": "co2_dkk",
+      "importance": 3.6144676869298564e-06
+    },
+    {
+      "feature": "dow_cos",
+      "importance": 3.25977794091159e-06
+    },
+    {
+      "feature": "price_roll_mean_24h",
+      "importance": 3.1979955110728042e-06
+    },
+    {
+      "feature": "humidity_pct",
+      "importance": 3.161744871249539e-06
+    },
+    {
+      "feature": "price_roll_std_24h",
+      "importance": 3.1547413072985364e-06
+    },
+    {
+      "feature": "temperature_c",
+      "importance": 3.081609293076326e-06
+    },
+    {
+      "feature": "cloud_cover_pct",
+      "importance": 2.6559687285043765e-06
+    }
+  ],
+  "error_by_time": {
+    "hour_of_day": {
+      "0": 119.24217224121094,
+      "1": 117.51736450195312,
+      "2": 112.04576110839844,
+      "3": 116.4087142944336,
+      "4": 136.24456787109375,
+      "5": 154.12326049804688,
+      "6": 152.21719360351562,
+      "7": 152.8253936767578,
+      "8": 162.56387329101562,
+      "9": 164.8711700439453,
+      "10": 168.58438110351562,
+      "11": 168.00595092773438,
+      "12": 162.0894012451172,
+      "13": 154.4529266357422,
+      "14": 140.81044006347656,
+      "15": 147.2340087890625,
+      "16": 168.25506591796875,
+      "17": 214.65982055664062,
+      "18": 221.73016357421875,
+      "19": 183.82635498046875,
+      "20": 145.69410705566406,
+      "21": 126.39363098144531,
+      "22": 116.34752655029297,
+      "23": 119.8912582397461
+    },
+    "day_of_week": {
+      "Mon": 180.4293670654297,
+      "Tue": 154.02334594726562,
+      "Wed": 149.58900451660156,
+      "Thu": 150.5904083251953,
+      "Fri": 142.07257080078125,
+      "Sat": 136.86383056640625,
+      "Sun": 144.02484130859375
+    }
+  },
+  "tcn_channel_sensitivity": [
+    {
+      "feature": "gas_dkk",
+      "sensitivity": 9.44738530961331e-06
+    },
+    {
+      "feature": "price_lag_24h",
+      "sensitivity": 7.75262014940381e-06
+    },
+    {
+      "feature": "renewable_mwh",
+      "sensitivity": 7.328843366849469e-06
+    },
+    {
+      "feature": "price_lag_48h",
+      "sensitivity": 4.727405666926643e-06
+    },
+    {
+      "feature": "dow_sin",
+      "sensitivity": 4.455188445717795e-06
+    },
+    {
+      "feature": "hour_sin",
+      "sensitivity": 4.455032467376441e-06
+    },
+    {
+      "feature": "load_mwh",
+      "sensitivity": 4.321598680689931e-06
+    },
+    {
+      "feature": "price_lag_168h",
+      "sensitivity": 4.097038981853984e-06
+    },
+    {
+      "feature": "wind_speed_ms",
+      "sensitivity": 3.830852165265242e-06
+    },
+    {
+      "feature": "hour_cos",
+      "sensitivity": 3.747433993339655e-06
+    },
+    {
+      "feature": "co2_dkk",
+      "sensitivity": 3.6144676869298564e-06
+    },
+    {
+      "feature": "dow_cos",
+      "sensitivity": 3.25977794091159e-06
+    },
+    {
+      "feature": "price_roll_mean_24h",
+      "sensitivity": 3.1979955110728042e-06
+    },
+    {
+      "feature": "humidity_pct",
+      "sensitivity": 3.161744871249539e-06
+    },
+    {
+      "feature": "price_roll_std_24h",
+      "sensitivity": 3.1547413072985364e-06
+    },
+    {
+      "feature": "temperature_c",
+      "sensitivity": 3.081609293076326e-06
+    },
+    {
+      "feature": "cloud_cover_pct",
+      "sensitivity": 2.6559687285043765e-06
+    }
+  ]
+}

@@ -42,7 +42,7 @@ class GNNTrainer:
         
         # Learning rate scheduler
         self.scheduler = ReduceLROnPlateau(
-            self.optimizer, mode='min', factor=0.5, patience=10, verbose=True
+            self.optimizer, mode='min', factor=0.5, patience=10
         )
         
         # Training history
@@ -197,7 +197,7 @@ class GNNTrainer:
     
     def load_checkpoint(self, filename):
         checkpoint_path = ARTIFACTS_DIR / filename
-        checkpoint = torch.load(checkpoint_path, map_location=DEVICE)
+        checkpoint = torch.load(checkpoint_path, map_location=DEVICE, weights_only=False)
         self.model.load_state_dict(checkpoint['model_state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])

@@ -1,124 +1,122 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  # ============================================================================
-  # HOMOGENEOUS GNN (Baseline)
-  # ============================================================================
-  
-  # Train homogeneous model
-  train-homogeneous:
-    build: .
-    container_name: gnn-train-homo
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.13.0
+    ports:
+      - "5000:5000"
     volumes:
-      - ./src/data:/app/src/data
-      - ./src/artifacts:/app/src/artifacts
-    environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app:/app/src
-    command: python src/gnn_pipeline.py --zone DK1
-    networks:
-      - gnn-network
-  
-  # Homogeneous API
-  api-homogeneous:
+      - ./mlruns.db:/mlflow/mlruns.db
+    command: >
+      mlflow server
+        --backend-store-uri sqlite:///mlflow/mlruns.db
+        --host 0.0.0.0
+        --port 5000
+    restart: unless-stopped
+
+  api:
     build: .
-    container_name: gnn-api-homo
     ports:
       - "8000:8000"
     volumes:
       - ./src/data:/app/src/data
       - ./src/artifacts:/app/src/artifacts
+      - ./src/artifacts_hetero:/app/src/artifacts_hetero
     environment:
       - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app:/app/src
-    command: python src/gnn_api.py
-    restart: unless-stopped
-    networks:
-      - gnn-network
-
-  # ============================================================================
-  # HETEROGENEOUS GNN (Advanced)
-  # ============================================================================
-  
-  # Train heterogeneous model (with baseline comparison)
-  train-heterogeneous:
-    build: .
-    container_name: gnn-train-hetero
-    volumes:
-      - ./src/data:/app/src/data
-      - ./src/artifacts:/app/src/artifacts
-      - ./artifacts_hetero:/app/artifacts_hetero
-    environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app:/app/src
-    command: python src/hetero_pipeline.py --zone DK1 --model SimpleHeteroGNN
-    networks:
-      - gnn-network
-  
-  # Train heterogeneous only (skip baseline)
-  train-heterogeneous-only:
-    build: .
-    container_name: gnn-train-hetero-only
-    volumes:
-      - ./src/data:/app/src/data
-      - ./src/artifacts:/app/src/artifacts
-      - ./artifacts_hetero:/app/artifacts_hetero
-    environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app:/app/src
-    command: python src/hetero_pipeline.py --zone DK1 --model SimpleHeteroGNN --skip-baseline
-    networks:
-      - gnn-network
-
-  # ============================================================================
-  # COMPARISON
-  # ============================================================================
-  
-  # Compare both models
-  compare-models:
-    build: .
-    container_name: gnn-compare
-    volumes:
-      - ./src/data:/app/src/data
-      - ./src/artifacts:/app/src/artifacts
-      - ./artifacts_hetero:/app/artifacts_hetero
-    environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app:/app/src
-    command: python src/compare_models.py
-    networks:
-      - gnn-network
+      - PYTHONPATH=/app/src
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    command: python src/model_api.py
     depends_on:
-      - train-homogeneous
-      - train-heterogeneous
+      - mlflow
+    restart: unless-stopped
 
-  # ============================================================================
-  # DASHBOARD
-  # ============================================================================
-  
-  # Dashboard (works with both models)
   dashboard:
     build: .
-    container_name: gnn-dashboard
     ports:
       - "8501:8501"
     volumes:
       - ./src/data:/app/src/data
       - ./src/artifacts:/app/src/artifacts
-      - ./artifacts_hetero:/app/artifacts_hetero
+      - ./src/artifacts_hetero:/app/src/artifacts_hetero
     environment:
       - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app:/app/src
-    command: streamlit run src/gnn_dashboard.py --server.port=8501 --server.address=0.0.0.0
+      - PYTHONPATH=/app/src
+      - API_BASE=http://api:8000
+    command: streamlit run src/dashboard.py --server.port=8501 --server.address=0.0.0.0
+    depends_on:
+      - api
     restart: unless-stopped
-    networks:
-      - gnn-network
 
-networks:
-  gnn-network:
-    driver: bridge
+  train-hetero:
+    build: .
+    volumes:
+      - ./src/data:/app/src/data
+      - ./src/artifacts:/app/src/artifacts
+      - ./src/artifacts_hetero:/app/src/artifacts_hetero
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app/src
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    command: python src/quick_retrain.py
+    profiles:
+      - train
 
-volumes:
-  data:
-  artifacts:
-  artifacts_hetero:
+  train-homo:
+    build: .
+    volumes:
+      - ./src/data:/app/src/data
+      - ./src/artifacts:/app/src/artifacts
+      - ./src/artifacts_hetero:/app/src/artifacts_hetero
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app/src
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    command: python src/homo_retrain.py
+    profiles:
+      - train
+
+  compare:
+    build: .
+    volumes:
+      - ./src/data:/app/src/data
+      - ./src/artifacts:/app/src/artifacts
+      - ./src/artifacts_hetero:/app/src/artifacts_hetero
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app/src
+    command: python src/compare_models.py
+    depends_on:
+      - train-hetero
+      - train-homo
+    profiles:
+      - train
+
+  pipeline:
+    build: .
+    volumes:
+      - ./src/data:/app/src/data
+      - ./src/artifacts:/app/src/artifacts
+      - ./src/artifacts_hetero:/app/src/artifacts_hetero
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app/src
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    command: python src/pipeline.py
+    depends_on:
+      - mlflow
+    profiles:
+      - pipeline
+
+  ingest:
+    build: .
+    volumes:
+      - ./src/data:/app/src/data
+      - ./src/artifacts:/app/src/artifacts
+      - ./src/artifacts_hetero:/app/src/artifacts_hetero
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app/src
+    command: python src/data_ingestion.py
+    profiles:
+      - pipeline

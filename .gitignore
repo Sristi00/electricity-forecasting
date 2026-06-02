@@ -1,0 +1,18 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.env
+.venv
+venv/
+*.log
+.DS_Store
+mlruns/
+*.db
+
+# Jupyter checkpoints
+.ipynb_checkpoints/

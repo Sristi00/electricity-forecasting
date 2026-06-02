@@ -1,0 +1,14 @@
+{
+  "model": "GraphSAGE (homogeneous)",
+  "dataset_hours": 50399,
+  "train_split": "80%",
+  "val_split": "10%",
+  "test_split": "10%",
+  "eval_zones": "DK1 + DK2",
+  "hidden_channels": 128,
+  "mae": 161.9074,
+  "rmse": 212.5292,
+  "r2": 0.6708,
+  "smape": 56.0808,
+  "mape": 14539713536.0
+}

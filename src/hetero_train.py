@@ -11,7 +11,7 @@ from hetero_models import HeteroPriceForecaster
 
 def train_hetero_pipeline():
     print("\n🚀 Starting Training Loop for Upgraded Multi-Area Heterogeneous GNN...")
-    data = torch.load(GRAPH_DIR / "hetero_graph.pt", map_location=DEVICE)
+    data = torch.load(GRAPH_DIR / "hetero_graph.pt", map_location=DEVICE, weights_only=False)
     num_hours = int(data['hour'].num_hours_per_zone)
 
     model = HeteroPriceForecaster(metadata=data.metadata(), hour_in_features=data['hour'].x.shape[1]).to(DEVICE)

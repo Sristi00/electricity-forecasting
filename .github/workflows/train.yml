@@ -1,0 +1,182 @@
+name: Retrain Models
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Which model to train"
+        required: true
+        default: "all"
+        type: choice
+        options:
+          - all
+          - xgboost
+          - homo
+          - hetero
+      max_epochs:
+        description: "Maximum training epochs (GNN models)"
+        required: false
+        default: "200"
+        type: string
+      force_rebuild:
+        description: "Force graph rebuild even if no new data"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+  push:
+    branches:
+      - main
+
+jobs:
+  pipeline:
+    name: MLOps Pipeline — ${{ github.event_name == 'push' && 'auto (push to main)' || github.event.inputs.model || 'all' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # ------------------------------------------------------------------
+      # Data ingestion (runs on every push to main + manual dispatch)
+      # ------------------------------------------------------------------
+      - name: Ingest data (incremental)
+        env:
+          PYTHONPATH: src
+        run: |
+          python - <<'EOF'
+          import sys, json
+          sys.path.insert(0, 'src')
+          from data_ingestion import run_ingestion
+          report = run_ingestion(full_history=False)
+          print(json.dumps(report, indent=2, default=str))
+          EOF
+
+      # ------------------------------------------------------------------
+      # Model training (skip on push if only docs changed; always on dispatch)
+      # ------------------------------------------------------------------
+      - name: Train XGBoost
+        if: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.model == 'xgboost' || github.event.inputs.model == 'all') }}
+        env:
+          PYTHONPATH: src
+        run: python src/xgboost_baseline.py
+
+      - name: Train HomoGNN (GraphSAGE)
+        if: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.model == 'homo' || github.event.inputs.model == 'all') }}
+        env:
+          PYTHONPATH: src
+        run: |
+          python - <<'EOF'
+          import sys
+          sys.path.insert(0, 'src')
+          from homo_retrain import homo_retrain
+          max_epochs = int("${{ github.event.inputs.max_epochs || '200' }}")
+          homo_retrain(max_epochs=max_epochs)
+          EOF
+
+      - name: Train HeteroSAGE
+        if: ${{ github.event_name == 'push' || github.event.inputs.model == 'hetero' || github.event.inputs.model == 'all' }}
+        env:
+          PYTHONPATH: src
+        run: |
+          python - <<'EOF'
+          import sys
+          sys.path.insert(0, 'src')
+          from quick_retrain import quick_retrain
+          import os
+          # Use dispatch input when available; default to 200 for push-triggered runs
+          max_epochs = int(os.environ.get("MAX_EPOCHS", "200"))
+          quick_retrain(max_epochs=max_epochs)
+          EOF
+        env:
+          PYTHONPATH: src
+          MAX_EPOCHS: ${{ github.event.inputs.max_epochs || '200' }}
+
+      # ------------------------------------------------------------------
+      # Validate metrics — regression guard
+      # Fail the workflow if new MAE > 1.5x previous best MAE
+      # ------------------------------------------------------------------
+      - name: Validate metrics (regression guard)
+        env:
+          PYTHONPATH: src
+        run: |
+          python - <<'EOF'
+          import sys, json
+          from pathlib import Path
+          sys.path.insert(0, 'src')
+
+          artifacts = Path('src/artifacts_hetero')
+          metrics_file = artifacts / 'hetero_metrics_clean.json'
+          prev_file = artifacts / 'previous_best_metrics.json'
+
+          if not metrics_file.exists():
+              print("No new metrics file found — skipping regression guard")
+              sys.exit(0)
+
+          with open(metrics_file) as f:
+              new_metrics = json.load(f)
+          new_mae = new_metrics.get('mae', float('inf'))
+          print(f"New MAE: {new_mae:.4f} DKK")
+
+          if prev_file.exists():
+              with open(prev_file) as f:
+                  prev_metrics = json.load(f)
+              prev_mae = prev_metrics.get('mae', float('inf'))
+              print(f"Previous best MAE: {prev_mae:.4f} DKK")
+              threshold = prev_mae * 1.5
+              if new_mae > threshold:
+                  print(f"REGRESSION DETECTED: new MAE {new_mae:.4f} > 1.5x previous {prev_mae:.4f} (threshold={threshold:.4f})")
+                  sys.exit(1)
+              else:
+                  print(f"Regression guard passed: {new_mae:.4f} <= {threshold:.4f}")
+                  # Update previous best if improved
+                  if new_mae < prev_mae:
+                      import shutil
+                      shutil.copy(metrics_file, prev_file)
+                      print(f"Updated previous best to {new_mae:.4f}")
+          else:
+              print("No previous metrics found — storing current as baseline")
+              import shutil
+              shutil.copy(metrics_file, prev_file)
+          EOF
+
+      - name: Compare models
+        if: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.model == 'all' || github.event.inputs.model == 'hetero') }}
+        env:
+          PYTHONPATH: src
+        run: python src/compare_models.py
+
+      # ------------------------------------------------------------------
+      # Upload artifacts
+      # ------------------------------------------------------------------
+      - name: Upload model artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-artifacts-${{ github.run_id }}
+          path: |
+            artifacts/
+            src/artifacts/
+            src/artifacts_hetero/
+          retention-days: 30
+
+      - name: Upload MLflow database
+        uses: actions/upload-artifact@v4
+        with:
+          name: mlruns-db-${{ github.run_id }}
+          path: mlruns.db
+          if-no-files-found: ignore
+          retention-days: 30

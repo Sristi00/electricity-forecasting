@@ -1,0 +1,10 @@
+{
+  "model": "ST-HeteroSAGE",
+  "hidden_channels": 128,
+  "num_st_blocks": 2,
+  "eval_zones": "DK1+DK2",
+  "mae": 151.0848,
+  "rmse": 204.3635,
+  "r2": 0.6956,
+  "smape": 51.6412
+}

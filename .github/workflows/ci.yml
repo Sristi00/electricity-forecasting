@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - "claude/**"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  validate:
+    name: Validate syntax and artifacts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install numpy pandas scikit-learn xgboost mlflow fastapi uvicorn pydantic
+
+      - name: Syntax check — Python source files
+        run: |
+          python -m py_compile src/quick_retrain.py
+          python -m py_compile src/homo_retrain.py
+          python -m py_compile src/xgboost_baseline.py
+          python -m py_compile src/compare_models.py
+          python -m py_compile src/model_api.py
+          python -m py_compile src/gnn_graph_builder.py
+          python -m py_compile src/gnn_train.py
+
+      - name: Validate JSON artifacts
+        run: |
+          python - <<'EOF'
+          import json, glob, sys
+
+          patterns = [
+              "artifacts/*.json",
+              "src/artifacts/*.json",
+              "src/artifacts_hetero/*.json",
+          ]
+
+          found = []
+          for pat in patterns:
+              found.extend(glob.glob(pat))
+
+          if not found:
+              print("No JSON artifact files found — skipping validation.")
+              sys.exit(0)
+
+          errors = []
+          for path in found:
+              try:
+                  with open(path) as f:
+                      json.load(f)
+                  print(f"  OK  {path}")
+              except Exception as e:
+                  errors.append(f"  FAIL {path}: {e}")
+
+          if errors:
+              for msg in errors:
+                  print(msg)
+              sys.exit(1)
+          else:
+              print(f"All {len(found)} JSON file(s) valid.")
+          EOF
+
+      - name: Print comparison report (load_metrics)
+        run: |
+          python -c "import sys; sys.path.insert(0,'src'); from compare_models import load_metrics; load_metrics()"

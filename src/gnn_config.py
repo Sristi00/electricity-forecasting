@@ -40,13 +40,13 @@ EUR_TO_DKK = 7.46
 HISTORICAL_DAYS = 90
 
 # ── Graph Construction Settings ────────────────────────────────────
-# Edge types - temporal connections
+# Edge types - day-ahead-safe temporal connections.
+# Only lags >= 24h are used: these are known at gate closure (noon D-1) and
+# therefore valid for genuine day-ahead forecasting. The previous t-1/t-2/t-6
+# edges leaked near-term prices and were removed.
 EDGE_TYPES = {
-    "temporal_1h": 1,      # Connect consecutive hours
     "temporal_24h": 24,    # Connect same hour previous day
     "temporal_168h": 168,  # Connect same hour previous week
-    "temporal_2h": 2,      # Connect hour t with t+2
-    "temporal_6h": 6,      # Connect hour t with t+6
 }
 
 # Node feature configuration

@@ -9,6 +9,20 @@ torch-geometric>=2.3.0
 torch-scatter>=2.1.0
 torch-sparse>=0.6.0
 
+# ML models
+xgboost>=2.0.0
+
+# MLOps
+mlflow>=2.13.0
+
+# API serving
+fastapi>=0.109.0
+uvicorn>=0.27.0
+
+# Dashboard
+streamlit>=1.31.0
+plotly>=5.18.0
+
 # Data fetching
 requests>=2.31.0
 python-dotenv>=1.0.0
@@ -16,8 +30,6 @@ python-dotenv>=1.0.0
 # Visualization
 matplotlib>=3.7.0
 seaborn>=0.12.0
-
- 
 
 # Optional: For GPU support
 # torch-cuda  # If using CUDA

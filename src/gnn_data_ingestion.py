@@ -24,7 +24,7 @@ def fetch_prices_from_api(days=120):
         'DK1': 'DK1',
         'DK2': 'DK2',
         'DE': 'DE-LU',
-        'HYDRO': 'SE4'  # Sweden Zone 4 feeds directly into the Nord Pool / Danish interconnections
+        'HYDRO': 'SE3'  # Sweden Zone 3 (better hydro proxy than SE4)
     }
     
     all_records = []
